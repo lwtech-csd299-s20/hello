@@ -11,7 +11,6 @@ import javax.servlet.annotation.*;
 
 import freemarker.template.*;
 import org.apache.logging.log4j.*;
-import org.apache.logging.log4j.core.config.Configurator;
 
 import edu.lwtech.csd297.hello.commands.*;
 
@@ -139,13 +138,16 @@ public class HelloServlet extends HttpServlet {
                     return;
             } else {
                 logger.info("Unknown GET command received: {}", cmd);
-                sendResponse(response, HttpServletResponse.SC_NOT_FOUND);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
 
             // Process the template and send the results back to the user
             processTemplate(response, fmTemplateName, fmTemplateData);
 
+        } catch (IOException e) {
+            // Typically, this is because the connection was closed prematurely
+            logger.debug("Unexpected I/O exception: ", e);
         } catch (TemplateException e) {
             // Somehow bad data got into the template model...
             logger.error("Template exception processing {}", fmTemplateName);
@@ -202,7 +204,7 @@ public class HelloServlet extends HttpServlet {
         return property;
     }
 
-    private void processTemplate(HttpServletResponse response, String templateName, Map<String, Object> dataModel) throws TemplateException {
+    private void processTemplate(HttpServletResponse response, String templateName, Map<String, Object> dataModel) throws TemplateException, IOException {
         logger.debug("Processing Template: {}", templateName);
         try (PrintWriter out = response.getWriter()) {
 
@@ -213,9 +215,6 @@ public class HelloServlet extends HttpServlet {
             // This should never happen.
             logger.fatal(e);
             throw new IllegalStateException(e);
-        } catch (IOException e) {
-            // Typically, this means the browser connection dropped before we could send our response. Ignore.
-            logger.debug(e);
         }
     }
 
@@ -241,24 +240,6 @@ public class HelloServlet extends HttpServlet {
         }
         queryString = queryString.replaceAll("[\n|\t]", "_");
         return queryString;
-    }
-
-    private void sendResponse(HttpServletResponse response, int code) {
-        try {
-            response.sendError(code);
-        } catch (IOException | IllegalStateException e) {
-            logger.error("Unable to send {} response code.", code, e);
-        }
-    }
-
-    private void setLogLevel(String level) {
-        Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.getLevel(level));
-    }
-
-    private void insertHomePageFields(Map<String, Object> templateData) {
-        templateData.put("n", numPageLoads.incrementAndGet());
-        templateData.put("ownerName", ownerName);
-        templateData.put("version", version);
     }
 
 }
