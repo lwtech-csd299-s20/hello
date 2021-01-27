@@ -35,6 +35,30 @@ public class HelloServlet extends HttpServlet {
     private String version = "";
     private final AtomicInteger numPageLoads = new AtomicInteger(0);
 
+    // --------------------------------------------------------------------
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public int getNumPageLoads() {
+        return numPageLoads.get();
+    }
+
+    public void incrementNumPageLoads() {
+        numPageLoads.incrementAndGet();
+    }
+
+    public void resetPageLoads() {
+        numPageLoads.set(0);
+    }
+
+    // --------------------------------------------------------------------
+
     @Override
     public void init(ServletConfig config) throws ServletException {
 
