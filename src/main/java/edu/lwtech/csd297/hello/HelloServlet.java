@@ -37,6 +37,9 @@ public class HelloServlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
+
+        super.init(config);
+
         logger.warn("");
         logger.warn("===========================================================");
         logger.warn("       " + SERVLET_NAME + " init() started");
