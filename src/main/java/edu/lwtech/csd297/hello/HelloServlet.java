@@ -13,6 +13,8 @@ import freemarker.template.*;
 import org.apache.logging.log4j.*;
 import org.apache.logging.log4j.core.config.Configurator;
 
+import edu.lwtech.csd297.hello.commands.*;
+
 // World's Simplest Hello World Servlet -
 //      http://server:8080/hello/servlet
 //
@@ -30,6 +32,8 @@ public class HelloServlet extends HttpServlet {
     private static final String INTERNAL_PROPS_FILENAME = "servlet.properties";
     private static final String EXTERNAL_PROPS_FILENAME = "/var/local/config/" + SERVLET_NAME + ".props";
     private static final Configuration freeMarkerConfig = new Configuration(Configuration.getVersion());
+
+    private static final Map<String, ServletCommand> commandMap = new HashMap<>();
 
     private String ownerName = "";
     private String version = "";
@@ -100,6 +104,13 @@ public class HelloServlet extends HttpServlet {
         }
         logger.info("Successfully initialized FreeMarker");
 
+        // Initialize the ServletCommand map
+        commandMap.put("home", new HomeCommand());
+        commandMap.put("about", new AboutCommand());
+        commandMap.put("health", new HealthCommand());
+        commandMap.put("resetcount", new ResetCountCommand());
+        commandMap.put("setloglevel", new SetLogLevelCommand());
+
         logger.warn("");
         logger.warn("Initialization completed successfully!");
         logger.warn("");
@@ -120,50 +131,16 @@ public class HelloServlet extends HttpServlet {
         Map<String, Object> fmTemplateData = new HashMap<>();
 
         try {
-
-            // Prepare the appropriate Freemarker template
-            switch (cmd) {
-
-                case "home":
-                    fmTemplateName = "home.ftl";
-                    insertHomePageFields(fmTemplateData);
-                    break;
-
-                case "health":
-                    sendResponse(response, HttpServletResponse.SC_OK);
-                    return;                    
-
-                case "resetcount":
-                    numPageLoads.set(0);
-                    fmTemplateName = "home.ftl";
-                    insertHomePageFields(fmTemplateData);
-                    fmTemplateData.put("bannerMessage", "Page counter reset to zero.");
-                    break;
-
-                case "setloglevel":
-                    String level = request.getParameter("level");
-                    if (level == null)
-                        level = "INFO";
-                    if (!"|DEBUG|INFO|WARN|".contains("|"+level+"|")) {
-                        sendResponse(response, HttpServletResponse.SC_NOT_FOUND);
-                        return;
-                    }
-                    setLogLevel(level);
-                    fmTemplateName = "home.ftl";
-                    insertHomePageFields(fmTemplateData);
-                    fmTemplateData.put("bannerMessage", "Logging level set to " + level + ".");
-                    break;
-
-                case "about":
-                    fmTemplateName = "about.ftl";
-                    fmTemplateData.put("ownerName", ownerName);
-                    fmTemplateData.put("version", version);
-                    break;
-
-                default:
-                    logger.info("Unknown GET command received: {}", cmd);
-                    sendResponse(response, HttpServletResponse.SC_NOT_FOUND);
+            // Run the appropriate ServletCommand
+            ServletCommand command = commandMap.get(cmd);
+            if (command != null) {
+                fmTemplateName = command.initTemplate(this, request, response, fmTemplateData);
+                if (fmTemplateName == null)
                     return;
+            } else {
+                logger.info("Unknown GET command received: {}", cmd);
+                sendResponse(response, HttpServletResponse.SC_NOT_FOUND);
+                return;
             }
 
             // Process the template and send the results back to the user
