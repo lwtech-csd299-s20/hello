@@ -99,9 +99,7 @@ public class HelloServlet extends HttpServlet {
 
                 case "home":
                     fmTemplateName = "home.ftl";
-                    fmTemplateData.put("n", numPageLoads.incrementAndGet());
-                    fmTemplateData.put("ownerName", ownerName);
-                    fmTemplateData.put("version", version);
+                    insertHomePageFields(fmTemplateData);
                     break;
 
                 case "health":
